@@ -1,5 +1,5 @@
 import unittest
-from src.functional_maybe import FunctionalMaybe as Maybe
+from src.FunctionalMaybe import FunctionalMaybe as Maybe
 
 
 PRINT = False
