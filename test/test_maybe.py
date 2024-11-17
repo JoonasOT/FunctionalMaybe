@@ -1,9 +1,9 @@
-from functionalMaybe.Maybe import Maybe
+from src.functionalMaybe import FunctionalMaybe as Maybe
 
 from typing import NamedTuple
 
 
-PRINT = False
+PRINT = True
 
 
 class Tst(NamedTuple):

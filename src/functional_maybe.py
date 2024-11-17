@@ -11,7 +11,7 @@ T = TypeVar('T')
 V = TypeVar('V')
 
 
-class Maybe(Generic[T]):
+class FunctionalMaybe(Generic[T]):
     """
         Wraps given value to which it can transform to different values and can run given
         functions with the wrapped value.
@@ -40,7 +40,7 @@ class Maybe(Generic[T]):
         """
         self.v: T = v
 
-    def construct(self, type_: V, params: tuple) -> Maybe[V]:
+    def construct(self, type_: V, params: tuple) -> FunctionalMaybe[V]:
         """
         Construct an object of type_ and with params and return as Maybe
 
@@ -51,7 +51,7 @@ class Maybe(Generic[T]):
         return self.transform(lambda _: params)\
                    .transform(lambda p: type_(*p))
 
-    def apply(self, f: Callable[[T], V], unpack: bool = False) -> Union[V, Maybe.Empty]:
+    def apply(self, f: Callable[[T], V], unpack: bool = False) -> Union[V, FunctionalMaybe.Empty]:
         """Apply the wrapped variable to a given function and return the value or an Empty.
 
         :param f: The function to be applied
@@ -66,18 +66,18 @@ class Maybe(Generic[T]):
             except Exception as exp:
                 stack_trace = traceback.format_stack()
                 stack_trace.reverse()
-                return Maybe.Empty(str(exp) + f". Traceback:\n{''.join(stack_trace[1:])}")
+                return FunctionalMaybe.Empty(str(exp) + f". Traceback:\n{''.join(stack_trace[1:])}")
 
-    def transform(self, f: Callable[[T], V], unpack: bool = False) -> Maybe[Union[V, Maybe.Empty]]:
+    def transform(self, f: Callable[[T], V], unpack: bool = False) -> FunctionalMaybe[Union[V, FunctionalMaybe.Empty]]:
         """Apply the given function and wrap the value in a new Maybe
 
         :param f: Function to be applied
         :param unpack: Boolean flag for if we need to unpack tuples before applying
         :return: A new maybe wrapping the result of the application of f
         """
-        return Maybe(self.apply(f, unpack))
+        return FunctionalMaybe(self.apply(f, unpack))
 
-    def run(self, f: Callable[[T], V], unpack: bool = False) -> Maybe[T]:
+    def run(self, f: Callable[[T], V], unpack: bool = False) -> FunctionalMaybe[T]:
         """Run function f and if it results in an exception print the info to console
 
         :param f: Function to be run on the wrapped value
@@ -85,7 +85,7 @@ class Maybe(Generic[T]):
         :return: self
         """
         val: V = self.apply(f, unpack)
-        if isinstance(val, Maybe.Empty):
+        if isinstance(val, FunctionalMaybe.Empty):
             print(val, file=sys.stderr)
         return self
 
@@ -101,7 +101,7 @@ class Maybe(Generic[T]):
 
         :return: True if the wrapped value is an empty
         """
-        return not isinstance(self.v, Maybe.Empty)
+        return not isinstance(self.v, FunctionalMaybe.Empty)
 
     def __str__(self) -> str:
         """Convert to string
