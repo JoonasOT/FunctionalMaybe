@@ -4,7 +4,7 @@ import copy
 import traceback
 import sys
 
-from typing import TypeVar, Generic, Callable, Union
+from typing import TypeVar, Generic, Callable, Union, Sequence
 
 
 T = TypeVar('T')
@@ -40,7 +40,7 @@ class FunctionalMaybe(Generic[T]):
         """
         self.v: T = v
 
-    def construct(self, type_: V, params: tuple) -> FunctionalMaybe[V]:
+    def construct(self, type_: V, *args, **kvargs) -> FunctionalMaybe[V]:
         """
         Construct an object of type_ and with params and return as Maybe
 
@@ -48,8 +48,7 @@ class FunctionalMaybe(Generic[T]):
         :param params: The parameters given to constructor
         :return: A maybe of type_ with parameters params
         """
-        return self.transform(lambda _: params)\
-                   .transform(lambda p: type_(*p))
+        return self.transform(lambda p: type_(*args, **kvargs))
 
     def apply(self, f: Callable[[T], V], unpack: bool = False) -> Union[V, FunctionalMaybe.Empty]:
         """Apply the wrapped variable to a given function and return the value or an Empty.
@@ -77,6 +76,20 @@ class FunctionalMaybe(Generic[T]):
         """
         return FunctionalMaybe(self.apply(f, unpack))
 
+    def transformers(self, *f: Callable[[T], V]) -> FunctionalMaybe[Union[V, FunctionalMaybe.Empty]]:
+        """Apply the given functions and wrap the value in a new Maybe
+
+        :param f: Functions to be applied in an iterable
+        :return: A new maybe wrapping the result of the application of f
+        """
+        if not len(f):
+            return self
+
+        r = FunctionalMaybe(self.v)
+        for f_ in f:
+            r = r.transform(f_)
+        return r
+
     def run(self, f: Callable[[T], V], unpack: bool = False) -> FunctionalMaybe[T]:
         """Run function f and if it results in an exception print the info to console
 
@@ -87,6 +100,18 @@ class FunctionalMaybe(Generic[T]):
         val: V = self.apply(f, unpack)
         if isinstance(val, FunctionalMaybe.Empty):
             print(val, file=sys.stderr)
+        return self
+
+    def runners(self, *f: Callable[[T], V]) -> FunctionalMaybe[T]:
+        """Run function f and if it results in an exception print the info to console
+
+                :param f: Function to be run on the wrapped value
+                :return: self
+                """
+        for f_ in f:
+            val: V = self.apply(f_)
+            if isinstance(val, FunctionalMaybe.Empty):
+                print(val, file=sys.stderr)
         return self
 
     def get(self) -> T:
