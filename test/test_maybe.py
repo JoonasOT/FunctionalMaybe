@@ -1,6 +1,7 @@
 import unittest
 from src.FunctionalMaybe import FunctionalMaybe as Maybe
 
+# FIXME: These are dumb
 
 PRINT = False
 
