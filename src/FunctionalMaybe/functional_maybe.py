@@ -4,7 +4,7 @@ import copy
 import traceback
 import sys
 
-from typing import TypeVar, Generic, Callable, Union, Sequence
+from typing import TypeVar, Generic, Callable, Union, Any
 
 
 T = TypeVar('T')
@@ -120,6 +120,15 @@ class FunctionalMaybe(Generic[T]):
         :return: The wrapped value
         """
         return self.v
+
+    def orElse(self, something: V) -> Union[T, V]:
+        """Get the wrapped value or something else
+        if the Maybe contained an Empty.
+
+        :param something: What to return incase of an Empty.
+        :return: Wrapped value or the provided value.
+        """
+        return self.v if not isinstance(self.v, FunctionalMaybe.Empty) else something
 
     def __bool__(self) -> bool:
         """Is the wrapped value an empty
