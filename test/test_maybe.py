@@ -1,9 +1,10 @@
-from src.functionalMaybe import FunctionalMaybe as Maybe
+import unittest
+from src.functional_maybe import FunctionalMaybe as Maybe
 
 from typing import NamedTuple
 
 
-PRINT = True
+PRINT = False
 
 
 class Tst(NamedTuple):
@@ -16,14 +17,20 @@ def logger(val):
     return print(val) if PRINT else None
 
 
-def test():
-    assert Maybe()\
-            .construct(Tst, (1, "one"))\
-            .run(logger) \
-            .transform(lambda i, s: str(i) + s, True) \
-            .run(logger) \
-            .get() == "1one"
+TEST_PARAMS = (1, "one")
 
 
-if __name__ == "__main__":
-    test()
+def constructTestMaybe():
+    return Maybe().construct(type_=Tst, params=TEST_PARAMS)
+
+
+class TestMaybe(unittest.TestCase):
+    def testConstructor(self):
+        self.assertEqual(str(constructTestMaybe().get()), str(Tst(*TEST_PARAMS)))
+
+    def testTransform(self):
+        self.assertEqual(constructTestMaybe().transform(lambda i, s: str(i) + " " + s, True).get(),
+                         (lambda i, s: str(i) + " " + s)(*TEST_PARAMS))
+
+    def testRun(self):
+        self.assertEqual(constructTestMaybe().run(lambda _: 1).get(), constructTestMaybe().get())
