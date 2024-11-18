@@ -1,4 +1,13 @@
 import unittest
+
+# try:
+#     from FunctionalMaybe import FunctionalMaybe as Maybe
+#
+# except ModuleNotFoundError:
+#     import sys
+#     sys.path.insert(1, '../')
+#     from FunctionalMaybe import FunctionalMaybe as Maybe
+
 from FunctionalMaybe import FunctionalMaybe as Maybe
 
 # FIXME: These are dumb
@@ -31,12 +40,12 @@ def constructTestMaybe():
 
 class TestMaybe(unittest.TestCase):
     def testConstructor(self):
-        got = str(constructTestMaybe().get())
+        got = str(constructTestMaybe().unwrap())
         expected = str(Tst(*TEST_PARAMS, w=4))
         self.assertEqual(expected, got)
 
     def testTransform(self):
-        got = str(constructTestMaybe().transform(lambda tst: str(tst.x) + " " + tst.y).get())
+        got = str(constructTestMaybe().transform(lambda tst: str(tst.x) + " " + tst.y).unwrap())
         expected = str((lambda i, s: str(i) + " " + s)(*TEST_PARAMS))
         self.assertEqual(expected, got)
 
@@ -45,13 +54,13 @@ class TestMaybe(unittest.TestCase):
         toString = lambda tup: str(tup[0]) + tup[1]
         padd = lambda s: s + " ;"
 
-        got = str(constructTestMaybe().transformers(toTup, toString, padd).get())
+        got = str(constructTestMaybe().transformers(toTup, toString, padd).unwrap())
         expected = padd(toString(TEST_PARAMS))
         self.assertEqual(expected, got)
 
     def testRun(self):
-        got = str(constructTestMaybe().run(lambda _: 1).get())
-        expected = str(constructTestMaybe().get())
+        got = str(constructTestMaybe().run(lambda _: 1).unwrap())
+        expected = str(constructTestMaybe().unwrap())
         self.assertEqual(expected, got)
 
     def testRunners(self):
@@ -59,6 +68,6 @@ class TestMaybe(unittest.TestCase):
         toString = lambda tst: str(tst.x) + tst.y
         padd = lambda s: str(s) + " ;"
 
-        got = str(constructTestMaybe().runners(toTup, toString, padd).get())
-        expected = str(constructTestMaybe().get())
+        got = str(constructTestMaybe().runners(toTup, toString, padd).unwrap())
+        expected = str(constructTestMaybe().unwrap())
         self.assertEqual(expected, got)
