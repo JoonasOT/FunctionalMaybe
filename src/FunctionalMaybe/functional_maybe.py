@@ -17,6 +17,8 @@ class FunctionalMaybe(Generic[T]):
         functions with the wrapped value.
     """
 
+    Unwrapper = object()
+
     class Empty:
         """
             Basically an equivalent class to Optional.Empty, but just to the Maybe class. Can be supplied with a
@@ -48,6 +50,13 @@ class FunctionalMaybe(Generic[T]):
         :param params: The parameters given to constructor
         :return: A maybe of type_ with parameters params
         """
+
+        # Incase unwrapper was given:
+        args = tuple(map(lambda val: self.v if val == FunctionalMaybe.Unwrapper else val, args))
+        for k, v in kvargs.items():
+            if v == FunctionalMaybe.Unwrapper:
+                kvargs[k] = self.v
+
         return self.transform(lambda p: type_(*args, **kvargs))
 
     def apply(self, f: Callable[[T], V], unpack: bool = False) -> Union[V, FunctionalMaybe.Empty]:
@@ -114,7 +123,7 @@ class FunctionalMaybe(Generic[T]):
                 print(val, file=sys.stderr)
         return self
 
-    def get(self) -> T:
+    def unwrap(self) -> T:
         """Get the wrapped value
 
         :return: The wrapped value
