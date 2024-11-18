@@ -1,14 +1,5 @@
 import unittest
-
-# try:
-#     from FunctionalMaybe import FunctionalMaybe as Maybe
-#
-# except ModuleNotFoundError:
-#     import sys
-#     sys.path.insert(1, '../')
-#     from FunctionalMaybe import FunctionalMaybe as Maybe
-
-from FunctionalMaybe import FunctionalMaybe as Maybe
+from src.FunctionalMaybe.functional_maybe import FunctionalMaybe as Maybe
 
 # FIXME: These are dumb
 
