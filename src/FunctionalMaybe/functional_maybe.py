@@ -24,16 +24,25 @@ class FunctionalMaybe(Generic[T]):
             Basically an equivalent class to Optional.Empty, but just to the Maybe class. Can be supplied with a
             reason why we got an empty.
         """
+        RED = '\033[1;4;91m'
+        NORMAL = '\033[0;0m'
+        NO_PREV_VALUE = object()
 
-        def __init__(self, reason: str = ""):
+        def __init__(self, previousValue: Any = NO_PREV_VALUE, reason: str = ""):
             self.reason = reason
+            self.previously = previousValue
 
         def __str__(self) -> str:
-            RED = '\033[1;4;91m'
-            NORMAL = '\033[0;0m'
+            HAD_VALUE = self.previously != FunctionalMaybe.Empty.NO_PREV_VALUE # Could be None
             HAS_REASON = self.reason == ''
-            return f"{RED}{'This is empty' if HAS_REASON else 'Empty since'}" \
-                   f"{NORMAL}{'!' if HAS_REASON else ': ' + self.reason}"
+            out = f"{FunctionalMaybe.Empty.RED}Empty (FunctionalMaybe.Empty){FunctionalMaybe.Empty.NORMAL}"
+            if HAD_VALUE:
+                out += "\n" + f'Value of the FunctionalMaybe before turning empty: {self.previously}'
+            if HAS_REASON:
+                out += "\nReason:\n"
+                out += str(self.reason)
+
+            return out
 
     def __init__(self, v: T = None):
         """
@@ -74,7 +83,10 @@ class FunctionalMaybe(Generic[T]):
             except Exception as exp:
                 stack_trace = traceback.format_stack()
                 stack_trace.reverse()
-                return FunctionalMaybe.Empty(str(exp) + f". Traceback:\n{''.join(stack_trace[1:])}")
+                return FunctionalMaybe.Empty(
+                    previousValue=value,
+                    reason=str(exp) + f". Traceback:\n{''.join(stack_trace[1:])}"
+                )
 
     def transform(self, f: Callable[[T], V], unpack: bool = False) -> FunctionalMaybe[Union[V, FunctionalMaybe.Empty]]:
         """Apply the given function and wrap the value in a new Maybe

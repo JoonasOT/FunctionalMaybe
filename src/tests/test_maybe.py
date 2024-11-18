@@ -62,3 +62,9 @@ class TestMaybe(unittest.TestCase):
         got = str(constructTestMaybe().runners(toTup, toString, padd).unwrap())
         expected = str(constructTestMaybe().unwrap())
         self.assertEqual(expected, got)
+
+    def getEmpty(self):
+        got = Maybe("string").transform(lambda s: 10 + s).unwrap()
+        expected = "string"
+        self.assertTrue(isinstance(got, Maybe.Empty))
+        self.assertEqual(expected, got.reason)
