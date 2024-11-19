@@ -4,6 +4,7 @@ import copy
 import traceback
 import sys
 from .formatting import *
+from .empty import Empty
 
 from typing import TypeVar, Generic, Callable, Union, Any
 
@@ -18,44 +19,6 @@ class FunctionalMaybe(Generic[T]):
     """
 
     Unwrapper = object()
-
-    class Empty:
-        """
-            Basically an equivalent class to Optional.Empty, but just to the Maybe class. Can be supplied the prevous
-            value before turning to Empty, with a reason why we got an empty and the function call trace of the Maybe.
-        """
-        RED = '\033[1;4;91m'
-        NORMAL = '\033[0;0m'
-        NO_PREV_VALUE = object()
-
-        def __init__(self, previousValue: Any = NO_PREV_VALUE, reason: str = "", trace: list[str] = []):
-            """Create an Empty object
-
-            :param previousValue: The previous value contained by the Maybe
-            :param reason: The reason why an Empty was created
-            :param trace: The function call trace of all the calls before spawning the Empty
-            """
-            self.reason = reason
-            self.previously = previousValue
-            self.functionCallTrace = trace
-
-        def __str__(self) -> str:
-            HAD_VALUE = self.previously != FunctionalMaybe.Empty.NO_PREV_VALUE  # Could be None
-            HAS_REASON = self.reason != ''
-            out = f"{FunctionalMaybe.Empty.RED}Empty (FunctionalMaybe.Empty){FunctionalMaybe.Empty.NORMAL}"
-            if HAD_VALUE:
-                out += "\n" + f'Value of the FunctionalMaybe before turning empty: {self.previously}'
-            if HAS_REASON:
-                out += "\nReason:\n"
-                out += str(self.reason)
-
-            return out
-
-        def getFuncTrace(self) -> str:
-            """Get the function calls performed by the Maybe before the Empty
-            :return: The function calls as a string
-            """
-            return "\n".join(self.functionCallTrace)
 
     def __init__(self, v: T = None, **kvargs):
         """
@@ -107,7 +70,7 @@ class FunctionalMaybe(Generic[T]):
         return self.transform(construct, dontSupply, *args, **kvargs)
 
     def apply(self, f: Callable[[T, ...], V] | Callable[[...], V], dontSupply: bool = False, *args, **kvargs) \
-            -> Union[V, FunctionalMaybe.Empty]:
+            -> Union[V, Empty]:
         """Apply the wrapped variable to a given function and return the value or an Empty.
 
         :param f: The function to be applied
@@ -126,13 +89,13 @@ class FunctionalMaybe(Generic[T]):
             except Exception as exp:
                 stack_trace = traceback.format_stack()
                 stack_trace.reverse()
-                return FunctionalMaybe.Empty(
+                return Empty(
                     previousValue=value,
                     reason=str(exp) + f". Traceback:\n{''.join(stack_trace)}"
                 )
 
     def transform(self, f: Callable[[T, ...], V] | Callable[[...], V], dontSupply: bool = False, *args, **kvargs) \
-            -> FunctionalMaybe[Union[V, FunctionalMaybe.Empty]]:
+            -> FunctionalMaybe[Union[V, Empty]]:
         """Apply the given function and wrap the value in a new Maybe
 
         :param f: Function to be applied
@@ -143,7 +106,7 @@ class FunctionalMaybe(Generic[T]):
         return FunctionalMaybe(self.apply(f, dontSupply, *args, **kvargs), funcCallTrace=self.trace)
 
     def transformers(self, *f: Callable[[T], V] | Callable[[Any], V]) \
-            -> FunctionalMaybe[Union[V, FunctionalMaybe.Empty]]:
+            -> FunctionalMaybe[Union[V, Empty]]:
         """Apply the given functions and wrap the value in a new Maybe
 
         :param f: Functions to be applied in an iterable
@@ -169,7 +132,7 @@ class FunctionalMaybe(Generic[T]):
         args, kvargs = self.__mapArgsKvargs(*args, **kvargs)
         self.__add_to_trace(f"Run({funcOrClassToStr(f)}, {dontSupply}{argsToStr(args)}{kvargsToStr(kvargs)})")
         val: V = self.apply(f, dontSupply, *args, **kvargs)
-        if isinstance(val, FunctionalMaybe.Empty):
+        if isinstance(val, Empty):
             print(val, file=sys.stderr)
         return self
 
@@ -182,7 +145,7 @@ class FunctionalMaybe(Generic[T]):
         self.__add_to_trace(f"Runners({tuple(map(funcOrClassToStr, f))})")
         for f_ in f:
             val: V = self.apply(f_)
-            if isinstance(val, FunctionalMaybe.Empty):
+            if isinstance(val, Empty):
                 print(val, file=sys.stderr)
         return self
 
@@ -200,14 +163,14 @@ class FunctionalMaybe(Generic[T]):
         :param something: What to return incase of an Empty.
         :return: Wrapped value or the provided value.
         """
-        return self.v if not isinstance(self.v, FunctionalMaybe.Empty) else something
+        return self.v if not isinstance(self.v, Empty) else something
 
     def __bool__(self) -> bool:
         """Is the wrapped value an empty
 
         :return: True if the wrapped value is an empty
         """
-        return not isinstance(self.v, FunctionalMaybe.Empty)
+        return not isinstance(self.v, Empty)
 
     def __str__(self) -> str:
         """Convert to string
