@@ -26,7 +26,7 @@ TEST_PARAMS = (1, "one")
 
 
 def constructTestMaybe():
-    return Maybe().construct(Tst, *TEST_PARAMS, w=4)
+    return Maybe().construct(Tst, True, *TEST_PARAMS, w=4)
 
 
 class TestMaybe(unittest.TestCase):
@@ -38,6 +38,17 @@ class TestMaybe(unittest.TestCase):
     def testTransform(self):
         got = str(constructTestMaybe().transform(lambda tst: str(tst.x) + " " + tst.y).unwrap())
         expected = str((lambda i, s: str(i) + " " + s)(*TEST_PARAMS))
+        self.assertEqual(expected, got)
+
+        def setY(tst, val):
+            tst.y = val
+            return tst
+
+        got = str(constructTestMaybe().transform(setY, False, 15).unwrap())
+        expected = Tst(*TEST_PARAMS, w=4)
+        expected.y = 15
+        expected = str(expected)
+
         self.assertEqual(expected, got)
 
     def testTransformers(self):
