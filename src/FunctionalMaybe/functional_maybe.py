@@ -162,12 +162,12 @@ class FunctionalMaybe(Generic[T]):
         :param something: What to return incase of an Empty.
         :return: Wrapped value or the provided value.
         """
-        return self.v if not isinstance(self.v, Empty) else something
+        return self.v if self.__bool__() else something
 
     def __bool__(self) -> bool:
-        """Is the wrapped value an empty
+        """Is the wrapped value something valid
 
-        :return: True if the wrapped value is an empty
+        :return: True if the wrapped value is not an empty
         """
         return not isinstance(self.v, Empty)
 
