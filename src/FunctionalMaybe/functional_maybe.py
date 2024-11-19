@@ -41,7 +41,7 @@ class FunctionalMaybe(Generic[T]):
 
         def __str__(self) -> str:
             HAD_VALUE = self.previously != FunctionalMaybe.Empty.NO_PREV_VALUE  # Could be None
-            HAS_REASON = self.reason == ''
+            HAS_REASON = self.reason != ''
             out = f"{FunctionalMaybe.Empty.RED}Empty (FunctionalMaybe.Empty){FunctionalMaybe.Empty.NORMAL}"
             if HAD_VALUE:
                 out += "\n" + f'Value of the FunctionalMaybe before turning empty: {self.previously}'
@@ -126,7 +126,7 @@ class FunctionalMaybe(Generic[T]):
                 stack_trace.reverse()
                 return FunctionalMaybe.Empty(
                     previousValue=value,
-                    reason=str(exp) + f". Traceback:\n{''.join(stack_trace[1:])}"
+                    reason=str(exp) + f". Traceback:\n{''.join(stack_trace)}"
                 )
 
     def transform(self, f: Callable[[T, ...], V] | Callable[[...], V], dontSupply: bool = False, *args, **kvargs) \
