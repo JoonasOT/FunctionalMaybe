@@ -57,14 +57,16 @@ class FunctionalMaybe(Generic[T]):
             """
             return "\n".join(self.functionCallTrace)
 
-    def __init__(self, v: T = None, funcCallTrace: list[str] = None):
+    def __init__(self, v: T = None, **kvargs):
         """
         Create wrapper 'Maybe[T]' for a given value of type T.
         :param v: Value to be wrapped
         """
+
         self.v: T = v
-        self.trace: list[str] = funcCallTrace
-        if not funcCallTrace:
+        if 'funcCallTrace' in kvargs:
+            self.trace = kvargs['funcCallTrace']
+        else:
             self.trace = []
             self.__add_to_trace(f"Constructor({v})")
 
@@ -138,7 +140,7 @@ class FunctionalMaybe(Generic[T]):
         :return: A new maybe wrapping the result of the application of f
         """
         self.__add_to_trace(f"Transform({funcOrClassToStr(f)}, {dontSupply}{argsToStr(args)}{kvargsToStr(kvargs)})")
-        return FunctionalMaybe(self.apply(f, dontSupply, *args, **kvargs), self.trace)
+        return FunctionalMaybe(self.apply(f, dontSupply, *args, **kvargs), funcCallTrace=self.trace)
 
     def transformers(self, *f: Callable[[T], V] | Callable[[Any], V]) \
             -> FunctionalMaybe[Union[V, FunctionalMaybe.Empty]]:
@@ -151,7 +153,7 @@ class FunctionalMaybe(Generic[T]):
         if not len(f):
             return self
         self.__add_to_trace(f"Transformers{tuple(map(funcOrClassToStr, f))}")
-        r = FunctionalMaybe(self.v, self.trace)
+        r = FunctionalMaybe(self.v, funcCallTrace=self.trace)
         for f_ in f:
             r = r.transform(f_)
         return r
