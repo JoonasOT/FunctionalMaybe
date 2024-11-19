@@ -137,12 +137,11 @@ class FunctionalMaybe(Generic[T]):
         return self
 
     def runners(self, *f: Callable[[T], V]) -> FunctionalMaybe[T]:
-        """Run function f and if it results in an exception print the info to console
-
-                :param f: Function to be run on the wrapped value
-                :return: self
-                """
-        self.__add_to_trace(f"Runners({tuple(map(funcOrClassToStr, f))})")
+        """Run given functions f with the wrapped value
+        :param f: Function to be run on the wrapped value
+        :return: self
+        """
+        self.__add_to_trace(f"Runners{tuple(map(funcOrClassToStr, f))}")
         for f_ in f:
             val: V = self.apply(f_)
             if isinstance(val, Empty):
