@@ -3,9 +3,9 @@ from __future__ import annotations
 import copy
 import traceback
 import sys
+from .formatting import *
 
 from typing import TypeVar, Generic, Callable, Union, Any
-
 
 T = TypeVar('T')
 V = TypeVar('V')
@@ -21,19 +21,26 @@ class FunctionalMaybe(Generic[T]):
 
     class Empty:
         """
-            Basically an equivalent class to Optional.Empty, but just to the Maybe class. Can be supplied with a
-            reason why we got an empty.
+            Basically an equivalent class to Optional.Empty, but just to the Maybe class. Can be supplied the prevous
+            value before turning to Empty, with a reason why we got an empty and the function call trace of the Maybe.
         """
         RED = '\033[1;4;91m'
         NORMAL = '\033[0;0m'
         NO_PREV_VALUE = object()
 
-        def __init__(self, previousValue: Any = NO_PREV_VALUE, reason: str = ""):
+        def __init__(self, previousValue: Any = NO_PREV_VALUE, reason: str = "", trace: list[str] = []):
+            """Create an Empty object
+
+            :param previousValue: The previous value contained by the Maybe
+            :param reason: The reason why an Empty was created
+            :param trace: The function call trace of all the calls before spawning the Empty
+            """
             self.reason = reason
             self.previously = previousValue
+            self.functionCallTrace = trace
 
         def __str__(self) -> str:
-            HAD_VALUE = self.previously != FunctionalMaybe.Empty.NO_PREV_VALUE # Could be None
+            HAD_VALUE = self.previously != FunctionalMaybe.Empty.NO_PREV_VALUE  # Could be None
             HAS_REASON = self.reason == ''
             out = f"{FunctionalMaybe.Empty.RED}Empty (FunctionalMaybe.Empty){FunctionalMaybe.Empty.NORMAL}"
             if HAD_VALUE:
@@ -44,42 +51,76 @@ class FunctionalMaybe(Generic[T]):
 
             return out
 
-    def __init__(self, v: T = None):
+        def getFuncTrace(self) -> str:
+            """Get the function calls performed by the Maybe before the Empty
+            :return: The function calls as a string
+            """
+            return "\n".join(self.functionCallTrace)
+
+    def __init__(self, v: T = None, funcCallTrace: list[str] = None):
         """
         Create wrapper 'Maybe[T]' for a given value of type T.
         :param v: Value to be wrapped
         """
         self.v: T = v
+        self.trace: list[str] = funcCallTrace
+        if not funcCallTrace:
+            self.trace = []
+            self.__add_to_trace(f"Constructor({v})")
 
-    def construct(self, type_: V, *args, **kvargs) -> FunctionalMaybe[V]:
+    def __mapArgsKvargs(self, *args, **kvargs):
+        """Function to map all instances of FunctionalMaybe.Unwrapper to self.v
+
+        :param args: All non-keyword arguments
+        :param kvargs: All keyword arguments
+        :return: args, kvargs
         """
-        Construct an object of type_ and with params and return as Maybe
-
-        :param type_: Type of object to be created
-        :param params: The parameters given to constructor
-        :return: A maybe of type_ with parameters params
-        """
-
-        # Incase unwrapper was given:
         args = tuple(map(lambda val: self.v if val == FunctionalMaybe.Unwrapper else val, args))
         for k, v in kvargs.items():
             if v == FunctionalMaybe.Unwrapper:
                 kvargs[k] = self.v
+        return args, kvargs
 
-        return self.transform(lambda p: type_(*args, **kvargs))
+    def __add_to_trace(self, what: str) -> None:
+        """Add given string detailing a function call to the end of the trace
+        :param what: A string describing a function call
+        """
+        self.trace.append(what)
 
-    def apply(self, f: Callable[[T], V], unpack: bool = False) -> Union[V, FunctionalMaybe.Empty]:
+    def construct(self, type_: V, dontSupply: bool = True, *args, **kvargs) -> FunctionalMaybe[V]:
+        """
+        Construct an object of type_ and with params and return as Maybe
+
+        :param type_: Type of object to be created
+        :param dontSupply: Boolean flag for if we want to suply the wrapped value as the first argument to f or not
+        :return: A maybe of type_ with parameters params
+        """
+        self.__add_to_trace(f"Construct({funcOrClassToStr(type_)}, {dontSupply}{argsToStr(args)}{kvargsToStr(kvargs)})")
+
+        args, kvargs = self.__mapArgsKvargs(*args, **kvargs)
+
+        def construct(*a, **kv):
+            return type_(*a, **kv)
+
+        return self.transform(construct, dontSupply, *args, **kvargs)
+
+    def apply(self, f: Callable[[T, ...], V] | Callable[[...], V], dontSupply: bool = False, *args, **kvargs) \
+            -> Union[V, FunctionalMaybe.Empty]:
         """Apply the wrapped variable to a given function and return the value or an Empty.
 
         :param f: The function to be applied
-        :param unpack: Boolean flag for unwrapping tuples before applying them to the given function
+        :param dontSupply: Boolean flag for if we want to suply the wrapped value as the first argument to f or not
         :return: result of the wrapped value given to f
         """
+        if not isinstance(dontSupply, bool):
+            raise ValueError("Don't supply was not a boolean!")
+        args, kvargs = self.__mapArgsKvargs(*args, **kvargs)
+
+        # Create deepcopy incase this alters self.v
         value = copy.deepcopy(self.v)
-        func_calls = [lambda: f(value), lambda: f(*value)]
         if bool(self):
             try:
-                return func_calls[int(unpack)]()
+                return f(value, *args, **kvargs) if not dontSupply else f(*args, **kvargs)
             except Exception as exp:
                 stack_trace = traceback.format_stack()
                 stack_trace.reverse()
@@ -88,37 +129,44 @@ class FunctionalMaybe(Generic[T]):
                     reason=str(exp) + f". Traceback:\n{''.join(stack_trace[1:])}"
                 )
 
-    def transform(self, f: Callable[[T], V], unpack: bool = False) -> FunctionalMaybe[Union[V, FunctionalMaybe.Empty]]:
+    def transform(self, f: Callable[[T, ...], V] | Callable[[...], V], dontSupply: bool = False, *args, **kvargs) \
+            -> FunctionalMaybe[Union[V, FunctionalMaybe.Empty]]:
         """Apply the given function and wrap the value in a new Maybe
 
         :param f: Function to be applied
-        :param unpack: Boolean flag for if we need to unpack tuples before applying
+        :param dontSupply: Boolean flag for if we want to suply the wrapped value as the first argument to f or not
         :return: A new maybe wrapping the result of the application of f
         """
-        return FunctionalMaybe(self.apply(f, unpack))
+        self.__add_to_trace(f"Transform({funcOrClassToStr(f)}, {dontSupply}{argsToStr(args)}{kvargsToStr(kvargs)})")
+        return FunctionalMaybe(self.apply(f, dontSupply, *args, **kvargs), self.trace)
 
-    def transformers(self, *f: Callable[[T], V]) -> FunctionalMaybe[Union[V, FunctionalMaybe.Empty]]:
+    def transformers(self, *f: Callable[[T], V] | Callable[[Any], V]) \
+            -> FunctionalMaybe[Union[V, FunctionalMaybe.Empty]]:
         """Apply the given functions and wrap the value in a new Maybe
 
         :param f: Functions to be applied in an iterable
         :return: A new maybe wrapping the result of the application of f
         """
+        # No functions:
         if not len(f):
             return self
-
-        r = FunctionalMaybe(self.v)
+        self.__add_to_trace(f"Transformers{tuple(map(funcOrClassToStr, f))}")
+        r = FunctionalMaybe(self.v, self.trace)
         for f_ in f:
             r = r.transform(f_)
         return r
 
-    def run(self, f: Callable[[T], V], unpack: bool = False) -> FunctionalMaybe[T]:
+    def run(self, f: Callable[[T, ...], V] | Callable[[...], V], dontSupply: bool = False, *args, **kvargs)\
+            -> FunctionalMaybe[T]:
         """Run function f and if it results in an exception print the info to console
 
         :param f: Function to be run on the wrapped value
-        :param unpack: Boolean flag for if we need to unpack tuples before applying
+        :param dontSupply: Boolean flag for if we want to suply the wrapped value as the first argument to f or not
         :return: self
         """
-        val: V = self.apply(f, unpack)
+        args, kvargs = self.__mapArgsKvargs(*args, **kvargs)
+        self.__add_to_trace(f"Run({funcOrClassToStr(f)}, {dontSupply}{argsToStr(args)}{kvargsToStr(kvargs)})")
+        val: V = self.apply(f, dontSupply, *args, **kvargs)
         if isinstance(val, FunctionalMaybe.Empty):
             print(val, file=sys.stderr)
         return self
@@ -129,6 +177,7 @@ class FunctionalMaybe(Generic[T]):
                 :param f: Function to be run on the wrapped value
                 :return: self
                 """
+        self.__add_to_trace(f"Runners({tuple(map(funcOrClassToStr, f))})")
         for f_ in f:
             val: V = self.apply(f_)
             if isinstance(val, FunctionalMaybe.Empty):
