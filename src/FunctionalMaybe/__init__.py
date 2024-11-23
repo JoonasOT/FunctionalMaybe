@@ -1,4 +1,4 @@
 __all__ = ["FunctionalMaybe", "Empty"]
 
-from src.FunctionalMaybe.functional_maybe import FunctionalMaybe
-from src.FunctionalMaybe.empty import Empty
+from FunctionalMaybe.functional_maybe import FunctionalMaybe
+from FunctionalMaybe.empty import Empty
