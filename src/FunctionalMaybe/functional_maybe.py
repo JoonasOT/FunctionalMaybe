@@ -6,7 +6,7 @@ import sys
 from .formatting import *
 from .empty import Empty
 
-from typing import TypeVar, Generic, Callable, Union, Any
+from typing import TypeVar, Generic, Callable, Union, Any, Final
 
 T = TypeVar('T')
 V = TypeVar('V')
@@ -18,7 +18,7 @@ class FunctionalMaybe(Generic[T]):
         functions with the wrapped value.
     """
 
-    Unwrapper = object()
+    Unwrapper: Final[object] = object()
 
     def __init__(self, v: T = None, **kvargs):
         """
