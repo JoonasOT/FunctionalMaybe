@@ -44,7 +44,7 @@ class FunctionalMaybe(Generic[T]):
         """
         args = tuple(map(lambda val: self.v if val == FunctionalMaybe.Unwrapper else val, args))
         for k, v in kvargs.items():
-            if v == FunctionalMaybe.Unwrapper:
+            if id(v) == id(FunctionalMaybe.Unwrapper):
                 kvargs[k] = self.v
         return args, kvargs
 

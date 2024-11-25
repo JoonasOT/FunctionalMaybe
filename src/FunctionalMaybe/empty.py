@@ -22,7 +22,7 @@ class Empty:
         self.functionCallTrace = trace
 
     def __str__(self) -> str:
-        HAD_VALUE = self.previously != Empty.NO_PREV_VALUE  # Could be None
+        HAD_VALUE = id(self.previously) != id(Empty.NO_PREV_VALUE)  # Could be None
         HAS_REASON = self.reason != ''
         out = f"{Empty.RED}Empty (FunctionalMaybe.Empty){Empty.NORMAL}"
         if HAD_VALUE:
