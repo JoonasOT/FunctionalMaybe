@@ -38,5 +38,5 @@ jobs:
     - name: Install build
       run: python -m pip install ./dist/$(ls dist/ | grep functional_maybe | head -n 1)
     - name: Run unittests
-        run: |
+      run: |
           python -m unittest src.tests.test_maybe.TestMaybe
