@@ -3,10 +3,12 @@ from __future__ import annotations
 import copy
 import traceback
 import sys
+
+from typing import TypeVar, Generic, Callable, Union, Any, Final
+
 from .formatting import *
 from .empty import Empty
 
-from typing import TypeVar, Generic, Callable, Union, Any, Final
 
 T = TypeVar('T')
 V = TypeVar('V')
