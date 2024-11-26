@@ -117,7 +117,7 @@ class FunctionalMaybe(Generic[T]):
         # No functions:
         if not len(f):
             return self
-        self.__add_to_trace(f"Transformers{[funcOrClassToStr(f_) for f_ in f]}")
+        self.__add_to_trace(f"Transformers{tuple(map(funcOrClassToStr, f))}")
         r = FunctionalMaybe(self.v, funcCallTrace=self.trace)
         for f_ in f:
             r = r.transform(f_)
