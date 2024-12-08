@@ -42,7 +42,7 @@ class FunctionalMaybe(Generic[T]):
         :param kvargs: All keyword arguments
         :return: args, kvargs
         """
-        args = tuple(map(lambda val: self.v if val == FunctionalMaybe.Unwrapper else val, args))
+        args = tuple(map(lambda val: self.v if id(val) == id(FunctionalMaybe.Unwrapper) else val, args))
         for k, v in kvargs.items():
             if id(v) == id(FunctionalMaybe.Unwrapper):
                 kvargs[k] = self.v
